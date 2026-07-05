@@ -18,6 +18,7 @@ python -m venv .venv
 .\.venv\Scripts\python main.py analyze BTCUSDT --interval 4h   # 지표 분석 + 의견
 .\.venv\Scripts\python main.py backtest BTCUSDT --interval 1d --candles 730 --strategy ma_rsi
 .\.venv\Scripts\python main.py screen --top 20 -v                       # 장기 투자 적합도 평가
+.\.venv\Scripts\streamlit run app.py                                    # 웹 대시보드
 .\.venv\Scripts\python main.py chart BTCUSDT --interval 1m              # 실시간 캔들 차트
 .\.venv\Scripts\python main.py chart BTCUSDT --interval 1h --save c.png # PNG 1장 저장
 ```
@@ -38,6 +39,7 @@ advisor/
 ├── screening/screener.py     # 장기 투자 적합도 스크리너 (생존·지위·낙폭·성과·추세)
 ├── backtest/engine.py        # 백테스트 엔진 (수수료 반영, MDD/승률)
 ├── chart/live.py             # 실시간 캔들 차트 (matplotlib)
+├── dashboard/                # Streamlit 웹 대시보드 (탭별 화면: 시세·분석·스크리너·백테스트)
 └── trading/executor.py       # 자동매매 (API 키 등록 후 구현)
 ```
 
