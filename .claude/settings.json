@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "git add -A && { git diff --cached --quiet || { git commit -m \"auto: 변경사항 자동 커밋 (Stop hook)\" -m \"Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>\" && git push; }; }",
+            "timeout": 90,
+            "statusMessage": "GitHub에 자동 푸시 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
