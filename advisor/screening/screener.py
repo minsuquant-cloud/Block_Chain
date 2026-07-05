@@ -103,6 +103,18 @@ def _evaluate(symbol: str, volume_rank: int, weekly: pd.DataFrame) -> CoinScore:
     return s
 
 
+def evaluate_symbols(symbols: list[str]) -> list[CoinScore]:
+    """지정한 심볼 목록을 평가 (신뢰도 탭의 코인 선별 옵션에서 사용)."""
+    markets = binance_client.top_markets(top=200)
+    ranks = {s: i + 1 for i, s in enumerate(markets["symbol"])}
+    results = []
+    for sym in symbols:
+        weekly = binance_client.klines(sym, "1w", limit=500)
+        results.append(_evaluate(sym, ranks.get(sym, 999), weekly))
+        time.sleep(0.1)
+    return results
+
+
 def screen(top: int = 20) -> list[CoinScore]:
     """거래대금 상위 코인을 장기 투자 적합도 순으로 평가."""
     markets = binance_client.top_markets(top=top + len(config.STABLECOINS))

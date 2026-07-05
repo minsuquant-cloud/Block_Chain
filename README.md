@@ -39,7 +39,8 @@ advisor/
 ├── screening/screener.py     # 장기 투자 적합도 스크리너 (생존·지위·낙폭·성과·추세)
 ├── backtest/engine.py        # 백테스트 엔진 (수수료 반영, MDD/승률)
 ├── chart/live.py             # 실시간 캔들 차트 (matplotlib)
-├── dashboard/                # Streamlit 웹 대시보드 (탭별 화면: 시세·분석·스크리너·백테스트)
+├── dashboard/                # Streamlit 웹 대시보드 (탭별 화면: 시세·분석·스크리너·백테스트·신뢰도)
+├── reliability/evaluator.py  # 전략 신뢰도 측정 (다중 코인 재현성, 승률 신뢰구간, 개선 옵션)
 └── trading/executor.py       # 자동매매 (API 키 등록 후 구현)
 ```
 
