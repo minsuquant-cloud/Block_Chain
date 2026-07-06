@@ -74,6 +74,12 @@ def cmd_backtest(args):
     print(f"  거래 횟수     : {len(result.trades)}회 (청산 완료 {len(closed)}회)")
     if result.win_rate_pct is not None:
         print(f"  승률          : {result.win_rate_pct:.0f}%")
+    if closed:
+        from advisor.validation import expectancy
+        e = expectancy.compute([t.pnl_pct for t in closed])
+        print("\n  [기대값 분석]")
+        for line in expectancy.describe(e):
+            print(f"  {line}")
     if closed and args.verbose:
         print("\n  개별 거래:")
         for t in closed:
@@ -127,12 +133,49 @@ def cmd_paper(args):
                   f"{h['cur_price']:>12,.6g} {h['value']:>10,.2f} {h['pnl_pct']:>+7.2f}%")
     else:
         print("  보유 코인 없음")
+    realized = [t["realized_pnl_pct"] for t in s["trades"]
+                if t["realized_pnl_pct"] is not None]
+    if realized:
+        from advisor.validation import expectancy
+        print("\n  [실현 거래 기대값]")
+        for line in expectancy.describe(expectancy.compute(realized)):
+            print(f"  {line}")
     if s["trades"] and args.verbose:
         print("\n  거래 내역:")
         for t in s["trades"]:
             pnl = f" ({t['realized_pnl_pct']:+.2f}%)" if t["realized_pnl_pct"] is not None else ""
             print(f"    {t['time']}  {t['side']} {t['symbol']} {t['qty']:.6g}개 "
                   f"@ {t['price']:,.6g}{pnl}")
+
+
+def cmd_walkforward(args):
+    from advisor.validation import expectancy, walkforward
+
+    print(f"\n{args.symbol.upper()} 워크포워드 검증 — 캔들 {args.candles}개({args.interval}), "
+          f"학습 {args.train} → 검증 {args.test} 반복 (데이터 수집에 시간이 걸립니다)...\n")
+    wf = walkforward.run(args.symbol, args.interval, args.candles, args.train,
+                         args.test, strategy_key=args.strategy)
+    if not wf.folds:
+        print("데이터가 부족합니다. --candles를 늘리거나 --train/--test를 줄이세요.")
+        return
+    print(f"  {'검증 구간':23s} {'선택 전략':10s} {'학습':>8s} {'검증':>8s} {'보유':>8s} 판정")
+    for f in wf.folds:
+        mark = "승" if f.beat_bh else "패"
+        print(f"  {f.test_start:%Y-%m-%d}~{f.test_end:%y-%m-%d}  {f.chosen_strategy:10s} "
+              f"{f.train_return_pct:>+7.1f}% {f.test_return_pct:>+7.1f}% "
+              f"{f.test_bh_return_pct:>+7.1f}%  {mark}")
+    print(f"\n  검증 구간 누적 수익률 : {wf.test_compound_return_pct:+.1f}%")
+    print(f"  같은 기간 단순보유    : {wf.bh_compound_return_pct:+.1f}%")
+    print("\n  [검증 구간 기대값 — 미래를 몰랐을 때의 성적]")
+    for line in expectancy.describe(wf.expectancy):
+        print(f"  {line}")
+    if wf.continuous_return_pct is not None:
+        print("\n  [전략 고정 연속 평가 — 구간 경계에서 포지션을 끊지 않았을 때]")
+        print(f"  전략 {wf.continuous_return_pct:+.1f}% vs 단순보유 {wf.continuous_bh_pct:+.1f}%")
+        if wf.continuous_pnls:
+            for line in expectancy.describe(expectancy.compute(wf.continuous_pnls)):
+                print(f"  {line}")
+    print(f"\n  종합: {wf.verdict}")
 
 
 def cmd_autotrade(args):
@@ -197,6 +240,16 @@ def build_parser() -> argparse.ArgumentParser:
     pr = psub.add_parser("reset", help="초기화")
     pr.add_argument("--capital", type=float, default=config.INITIAL_CAPITAL)
     pp.set_defaults(func=cmd_paper, paper_cmd="status", verbose=False)
+
+    wf = sub.add_parser("walkforward", help="워크포워드 검증 (과최적화 판별)")
+    wf.add_argument("symbol")
+    wf.add_argument("--interval", default="1d")
+    wf.add_argument("--candles", type=int, default=1460, help="전체 캔들 수 (기본 4년 일봉)")
+    wf.add_argument("--train", type=int, default=365, help="학습 구간 캔들 수")
+    wf.add_argument("--test", type=int, default=91, help="검증 구간 캔들 수")
+    wf.add_argument("--strategy", choices=sorted(strategy.STRATEGIES), default=None,
+                    help="전략 고정 (미지정 시 학습 구간 1등을 자동 선택)")
+    wf.set_defaults(func=cmd_walkforward)
 
     at = sub.add_parser("autotrade", help="자동매매 실험 (모의투자 체결, API 키 불필요)")
     at.add_argument("--symbols", nargs="+", default=["BTCUSDT", "ETHUSDT"],
