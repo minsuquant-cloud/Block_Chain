@@ -98,6 +98,43 @@ def cmd_screen(args):
     print("\n  ※ 점수는 과거 데이터 기반 필터일 뿐, 미래 수익을 보장하지 않습니다.")
 
 
+def cmd_paper(args):
+    from advisor.paper import portfolio
+
+    if args.paper_cmd == "reset":
+        portfolio.reset(args.capital)
+        print(f"모의투자 초기화: 가상 자본 {args.capital:,.0f} USDT")
+        return
+    if args.paper_cmd == "buy":
+        t = portfolio.buy(args.symbol, args.usdt)
+        print(f"[모의 매수] {t['symbol']} {t['qty']:.6g}개 @ {t['price']:,.6g} "
+              f"(투입 {t['usdt']:,.2f} USDT, 수수료 반영)")
+        return
+    if args.paper_cmd == "sell":
+        t = portfolio.sell(args.symbol, args.pct)
+        print(f"[모의 매도] {t['symbol']} {t['qty']:.6g}개 @ {t['price']:,.6g} "
+              f"(회수 {t['usdt']:,.2f} USDT, 실현손익 {t['realized_pnl_pct']:+.2f}%)")
+        return
+    # status
+    s = portfolio.status()
+    print(f"\n[모의투자 현황 — 실시간 평가]\n")
+    print(f"  총자산   : {s['total_value']:,.2f} USDT ({s['total_return_pct']:+.2f}%)")
+    print(f"  현금     : {s['cash']:,.2f} USDT")
+    if s["holdings"]:
+        print(f"\n  {'심볼':10s} {'수량':>14s} {'평단가':>12s} {'현재가':>12s} {'평가액':>10s} {'손익':>8s}")
+        for h in s["holdings"]:
+            print(f"  {h['symbol']:10s} {h['qty']:>14.6g} {h['avg_price']:>12,.6g} "
+                  f"{h['cur_price']:>12,.6g} {h['value']:>10,.2f} {h['pnl_pct']:>+7.2f}%")
+    else:
+        print("  보유 코인 없음")
+    if s["trades"] and args.verbose:
+        print("\n  거래 내역:")
+        for t in s["trades"]:
+            pnl = f" ({t['realized_pnl_pct']:+.2f}%)" if t["realized_pnl_pct"] is not None else ""
+            print(f"    {t['time']}  {t['side']} {t['symbol']} {t['qty']:.6g}개 "
+                  f"@ {t['price']:,.6g}{pnl}")
+
+
 def cmd_chart(args):
     from advisor.chart import live  # matplotlib 로딩이 느려서 지연 임포트
 
@@ -136,6 +173,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--top", type=int, default=20, help="평가할 거래대금 상위 코인 수")
     s.add_argument("--verbose", "-v", action="store_true", help="평가 근거 출력")
     s.set_defaults(func=cmd_screen)
+
+    pp = sub.add_parser("paper", help="모의투자 (실시간 시세, 가상 자본)")
+    psub = pp.add_subparsers(dest="paper_cmd", required=False)
+    ps = psub.add_parser("status", help="포트폴리오 현황")
+    ps.add_argument("--verbose", "-v", action="store_true")
+    pb = psub.add_parser("buy", help="모의 매수")
+    pb.add_argument("symbol")
+    pb.add_argument("usdt", type=float, help="매수 금액 (USDT)")
+    pl = psub.add_parser("sell", help="모의 매도")
+    pl.add_argument("symbol")
+    pl.add_argument("--pct", type=float, default=100.0, help="매도 비율 %% (기본 전량)")
+    pr = psub.add_parser("reset", help="초기화")
+    pr.add_argument("--capital", type=float, default=config.INITIAL_CAPITAL)
+    pp.set_defaults(func=cmd_paper, paper_cmd="status", verbose=False)
 
     c = sub.add_parser("chart", help="실시간 캔들 차트")
     c.add_argument("symbol")

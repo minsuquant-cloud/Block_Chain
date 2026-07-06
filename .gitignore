@@ -11,3 +11,4 @@ __pycache__/
 
 # 로컬 산출물
 *.png
+paper_portfolio.json
