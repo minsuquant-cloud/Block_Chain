@@ -21,6 +21,7 @@ python -m venv .venv
 .\.venv\Scripts\streamlit run app.py                                    # 웹 대시보드
 .\.venv\Scripts\python main.py paper buy BTCUSDT 1000                   # 모의 매수
 .\.venv\Scripts\python main.py paper status -v                          # 모의투자 현황
+.\.venv\Scripts\python main.py autotrade --strategy rsi --poll 30       # 자동매매 실험 (모의)
 .\.venv\Scripts\python main.py chart BTCUSDT --interval 1m              # 실시간 캔들 차트
 .\.venv\Scripts\python main.py chart BTCUSDT --interval 1h --save c.png # PNG 1장 저장
 ```
@@ -44,6 +45,7 @@ advisor/
 ├── dashboard/                # Streamlit 웹 대시보드 (탭별 화면: 시세·분석·스크리너·백테스트·신뢰도)
 ├── reliability/evaluator.py  # 전략 신뢰도 측정 (다중 코인 재현성, 승률 신뢰구간, 개선 옵션)
 ├── paper/portfolio.py        # 모의투자 엔진 (실시간 시세, 가상 자본, 수수료 반영)
+├── autotrade/bot.py          # 자동매매 봇 (신호 감시→모의 체결, 실계좌 전환 시 executor만 교체)
 └── trading/executor.py       # 자동매매 (API 키 등록 후 구현)
 ```
 

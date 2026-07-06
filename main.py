@@ -135,6 +135,16 @@ def cmd_paper(args):
                   f"@ {t['price']:,.6g}{pnl}")
 
 
+def cmd_autotrade(args):
+    from advisor.autotrade import bot
+
+    if args.once:
+        n = bot.run_once(args.symbols, args.strategy, args.interval, args.budget)
+        print(f"\n1회 점검 완료 — 체결 {n}건")
+    else:
+        bot.run_loop(args.symbols, args.strategy, args.interval, args.poll, args.budget)
+
+
 def cmd_chart(args):
     from advisor.chart import live  # matplotlib 로딩이 느려서 지연 임포트
 
@@ -187,6 +197,16 @@ def build_parser() -> argparse.ArgumentParser:
     pr = psub.add_parser("reset", help="초기화")
     pr.add_argument("--capital", type=float, default=config.INITIAL_CAPITAL)
     pp.set_defaults(func=cmd_paper, paper_cmd="status", verbose=False)
+
+    at = sub.add_parser("autotrade", help="자동매매 실험 (모의투자 체결, API 키 불필요)")
+    at.add_argument("--symbols", nargs="+", default=["BTCUSDT", "ETHUSDT"],
+                    metavar="SYMBOL")
+    at.add_argument("--strategy", choices=sorted(strategy.STRATEGIES), default="ma_rsi")
+    at.add_argument("--interval", default="1m", help="캔들 주기 (실험은 1m 권장)")
+    at.add_argument("--poll", type=float, default=30.0, help="점검 주기(초)")
+    at.add_argument("--budget", type=float, default=1000.0, help="코인당 매수 예산(USDT)")
+    at.add_argument("--once", action="store_true", help="1회만 점검하고 종료")
+    at.set_defaults(func=cmd_autotrade)
 
     c = sub.add_parser("chart", help="실시간 캔들 차트")
     c.add_argument("symbol")
