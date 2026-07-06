@@ -48,6 +48,7 @@ advisor/
 ├── paper/portfolio.py        # 모의투자 엔진 (실시간 시세, 가상 자본, 수수료 반영)
 ├── autotrade/bot.py          # 자동매매 봇 (신호 감시→모의 체결, 실계좌 전환 시 executor만 교체)
 ├── validation/               # 검증 도구 (walkforward: 과최적화 판별, expectancy: 거래당 기대값)
+├── allocation/               # 코어-새틀라이트 배분 (주봉 SMA50 재난 보험, 리밸런싱 제안)
 └── trading/executor.py       # 자동매매 (API 키 등록 후 구현)
 ```
 
